@@ -4,10 +4,11 @@
 ## http://exchange.nagios.org/directory/Plugins/System-Metrics/File-System/GlusterFS-checks/details
 
 ### CHANGELOG
-## 1.0.1
+## 1.0.2
 # * 07/01/2014
 # * Modified by Doug Wilson <dwilson@customink.com>
 # * includes carrillm’s fix to support TB sized volumes
+# * outputs all errors on a critical alarm, not just free space
 
 # This Nagios script was written against version 3.3 & 3.4 of Gluster.  Older
 # versions will most likely not work at all with this monitoring script.
@@ -144,9 +145,11 @@ if [ -n "$CRIT" -a -n "$WARN" ]; then
 	if [ $CRIT -ge $WARN ]; then
 		Exit UNKNOWN "critical threshold below warning"
 	elif [ $freegb -lt $CRIT ]; then
-		Exit CRITICAL "free space ${freegb}GB"
+		errors=("${errors[@]}" "free space ${freegb}GB")
+	        ex_stat="CRITICAL_stat"
 	elif [ $freegb -lt $WARN ]; then
 		errors=("${errors[@]}" "free space ${freegb}GB")
+			    ex_stat="WARNING_stat"
 	fi
 fi
 
@@ -155,10 +158,12 @@ if [ -n "$errors" ]; then
 	sep='; '
 	msg=$(printf "${sep}%s" "${errors[@]}")
 	msg=${msg:${#sep}}
-
-	Exit WARNING "${msg}"
+  if [ ${ex_stat} == "CRITICAL_stat" ]; then
+	  Exit CRITICAL "${msg}"
+	else
+	  Exit WARNING "${msg}"
+  fi
 fi
 
 # exit with no errors
 Exit OK "${bricksfound} bricks; free space ${freegb}GB"
-
