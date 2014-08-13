@@ -38,26 +38,26 @@ REVISION="1.0.1"
 
 # parse command line
 usage () {
-  echo ""
-  echo "USAGE: "
-  echo "  $PROGNAME -v VOLUME -n BRICKS [-w GB -c GB]"
-  echo "     -n BRICKS: number of bricks"
-  echo "     -w and -c values in GB"
-  exit $STATE_UNKNOWN
+	echo ""
+	echo "USAGE: "
+	echo "  $PROGNAME -v VOLUME -n BRICKS [-w GB -c GB]"
+	echo "     -n BRICKS: number of bricks"
+	echo "     -w and -c values in GB"
+	exit $STATE_UNKNOWN
 }
 
 while getopts "v:n:w:c:" opt; do
-  case $opt in
-    v) VOLUME=${OPTARG} ;;
-    n) BRICKS=${OPTARG} ;;
-    w) WARN=${OPTARG} ;;
-    c) CRIT=${OPTARG} ;;
-    *) usage ;;
-  esac
+	case $opt in
+	v) VOLUME=${OPTARG} ;;
+	n) BRICKS=${OPTARG} ;;
+	w) WARN=${OPTARG} ;;
+	c) CRIT=${OPTARG} ;;
+	*) usage ;;
+	esac
 done
 
 if [ -z "${VOLUME}" -o -z "${BRICKS}" ]; then
-  usage
+	usage
 fi
 
 Exit () {
@@ -112,9 +112,9 @@ while read -r line; do
 			freeconvgb=`echo "($free*1024)" | bc`
 			unit=${freeunit#$free}
 			if [ "$unit" = "TB" ]; then
-			  free=$freeconvgb
-        unit="GB"
-      fi
+				free=$freeconvgb
+				unit="GB"
+			fi
 			if [ "$unit" != "GB" ]; then
 				Exit UNKNOWN "unknown disk space size $freeunit"
 			fi
@@ -149,7 +149,7 @@ if [ -n "$CRIT" -a -n "$WARN" ]; then
 	        ex_stat="CRITICAL_stat"
 	elif [ $freegb -lt $WARN ]; then
 		errors=("${errors[@]}" "free space ${freegb}GB")
-			    ex_stat="WARNING_stat"
+		ex_stat="WARNING_stat"
 	fi
 fi
 
@@ -158,11 +158,11 @@ if [ -n "$errors" ]; then
 	sep='; '
 	msg=$(printf "${sep}%s" "${errors[@]}")
 	msg=${msg:${#sep}}
-  if [ ${ex_stat} == "CRITICAL_stat" ]; then
-	  Exit CRITICAL "${msg}"
+	if [ ${ex_stat} == "CRITICAL_stat" ]; then
+		Exit CRITICAL "${msg}"
 	else
-	  Exit WARNING "${msg}"
-  fi
+		Exit WARNING "${msg}"
+	fi
 fi
 
 # exit with no errors
