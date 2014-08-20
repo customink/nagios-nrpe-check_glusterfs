@@ -9,6 +9,11 @@
 # * Modified by Doug Wilson <dwilson@customink.com>
 # * includes carrillm’s fix to support TB sized volumes
 # * outputs all errors on a critical alarm, not just free space
+#
+# * 20/08/2014
+# * Modified by emitor
+# * fix the regular expresion where get the free space (it didn't work for me on centOS)
+# * fix OK status to print the free space as it is
 
 # This Nagios script was written against version 3.3 & 3.4 of Gluster.  Older
 # versions will most likely not work at all with this monitoring script.
@@ -108,13 +113,13 @@ while read -r line; do
 		key=${field[@]:0:3}
 		if [ "${key}" = "Disk Space Free" ]; then
 			freeunit=${field[@]:4}
-			free=${freeunit:0:-2}
+			free=${freeunit:0:${#freeunit}-2}
 			freeconvgb=`echo "($free*1024)" | bc`
 			unit=${freeunit#$free}
 			if [ "$unit" = "TB" ]; then
 			  free=$freeconvgb
-        unit="GB"
-      fi
+			  unit="GB"
+			fi
 			if [ "$unit" != "GB" ]; then
 				Exit UNKNOWN "unknown disk space size $freeunit"
 			fi
@@ -166,4 +171,4 @@ if [ -n "$errors" ]; then
 fi
 
 # exit with no errors
-Exit OK "${bricksfound} bricks; free space ${freegb}GB"
+Exit OK "${bricksfound} bricks; free space ${freeunit}"
