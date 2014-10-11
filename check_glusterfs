@@ -139,6 +139,7 @@ if [ $bricksfound -eq 0 ]; then
 	Exit CRITICAL "no bricks found"
 elif [ $bricksfound -lt $BRICKS ]; then
 	errors=("${errors[@]}" "found $bricksfound bricks, expected $BRICKS ")
+	ex_stat="WARNING_stat"
 fi
 
 if [ -n "$CRIT" -a -n "$WARN" ]; then
