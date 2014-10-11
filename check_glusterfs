@@ -61,7 +61,7 @@ if [ -z "${VOLUME}" -o -z "${BRICKS}" ]; then
 fi
 
 Exit () {
-	$ECHO "$1: ${2:0}"
+	echo "$1: ${2:0}"
 	status=STATE_$1
 	exit ${!status}
 }
