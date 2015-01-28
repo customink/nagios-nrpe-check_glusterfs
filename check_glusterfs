@@ -3,14 +3,7 @@
 ## Fork of MarkR’s GlusterFS-checks at:
 ## http://exchange.nagios.org/directory/Plugins/System-Metrics/File-System/GlusterFS-checks/details
 
-### CHANGELOG
-## 1.0.2
-# * 07/01/2014
-# * Modified by Doug Wilson <dwilson@customink.com>
-# * includes carrillm’s fix to support TB sized volumes
-# * outputs all errors on a critical alarm, not just free space
-
-# This Nagios script was written against version 3.3 & 3.4 of Gluster.  Older
+# This Nagios script was written against version 3.5 of Gluster.  Older
 # versions will most likely not work at all with this monitoring script.
 #
 # Gluster currently requires elevated permissions to do anything.  In order to
@@ -31,23 +24,30 @@
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
 PROGNAME=$(basename -- $0)
-PROGPATH=`echo $0 | sed -e 's,[\\/][^\\/][^\\/]*$,,'`
-REVISION="1.0.1"
+PROGPATH=$(sed -e 's,[\\/][^\\/][^\\/]*$,,' <<<$0)
+REVISION="1.0.3"
 
-. $PROGPATH/utils.sh
+#. $PROGPATH/utils.sh
+STATE_OK=0
+STATE_WARNING=1
+STATE_CRITICAL=2
+STATE_UNKNOWN=3
+STATE_DEPENDENT=4
 
 # parse command line
 usage () {
-	echo ""
-	echo "USAGE: "
-	echo "  $PROGNAME -v VOLUME -n BRICKS [-w GB -c GB]"
-	echo "     -n BRICKS: number of bricks"
-	echo "     -w and -c values in GB"
+	cat <<-USAGE
+	USAGE:
+	  $PROGNAME -v VOLUME -n BRICKS [-w GB -c GB]
+	     -n BRICKS: number of bricks
+	     -w and -c values in GB
+	USAGE
 	exit $STATE_UNKNOWN
 }
 
-while getopts "v:n:w:c:" opt; do
+while getopts "hv:n:w:c:" opt; do
 	case $opt in
+	h) usage ;;
 	v) VOLUME=${OPTARG} ;;
 	n) BRICKS=${OPTARG} ;;
 	w) WARN=${OPTARG} ;;
@@ -56,7 +56,7 @@ while getopts "v:n:w:c:" opt; do
 	esac
 done
 
-if [ -z "${VOLUME}" -o -z "${BRICKS}" ]; then
+if [[ -z $VOLUME ]] || [[ -z $BRICKS ]]; then
 	usage
 fi
 
@@ -86,12 +86,12 @@ fi
 # get volume heal status
 heal=0
 for entries in $(sudo gluster volume heal ${VOLUME} info | awk '/^Number of entries: /{print $4}'); do
-	if [ "$entries" -gt 0 ]; then
-		let $((heal+=entries))
+	if [[ $entries -gt 0 ]]; then
+		let heal+=entries
 	fi
 done
-if [ "$heal" -gt 0 ]; then
-	errors=("${errors[@]}" "$heal unsynched entries")
+if [[ $heal -gt 0 ]]; then
+	errors+=($heal unsynched entries)
 fi
 
 # get volume status
@@ -99,67 +99,66 @@ bricksfound=0
 freegb=9999999
 shopt -s nullglob
 while read -r line; do
-	field=($(echo $line))
+	field=($line)
 	case ${field[0]} in
 	Brick) 
 		brick=${field[@]:2}
 		;;
 	Disk)
 		key=${field[@]:0:3}
-		if [ "${key}" = "Disk Space Free" ]; then
+		if [[ $key == "Disk Space Free" ]]; then
 			freeunit=${field[@]:4}
-			free=${freeunit:0:-2}
-			freeconvgb=`echo "($free*1024)" | bc`
+			free=${freeunit:0:$((${#freeunit}-2))}
 			unit=${freeunit#$free}
-			if [ "$unit" = "TB" ]; then
-				free=$freeconvgb
+			if [[ $unit == "TB" ]]; then
+				free=$(( $freeconvgb * 1024 ))
 				unit="GB"
 			fi
-			if [ "$unit" != "GB" ]; then
+			if [[ $unit != "GB" ]]; then
 				Exit UNKNOWN "unknown disk space size $freeunit"
 			fi
-			free=$(echo "${free} / 1" | bc -q)
-			if [ $free -lt $freegb ]; then
+			free=$(bc -q <<<"$free / 1")
+			if [[ $free -lt $freegb ]]; then
 				freegb=$free
 			fi
 		fi
 		;;
 	Online)
 		online=${field[@]:2}
-		if [ "${online}" = "Y" ]; then
-			let $((bricksfound++))
+		if [[ ${online} = "Y" ]]; then
+			let bricksfound++
 		else
-			errors=("${errors[@]}" "$brick offline")
+			errors+=($brick offline)
 		fi
 		;;
 	esac
 done < <(sudo gluster volume status ${VOLUME} detail)
 
-if [ $bricksfound -eq 0 ]; then
+if [[ $bricksfound -eq 0 ]]; then
 	Exit CRITICAL "no bricks found"
-elif [ $bricksfound -lt $BRICKS ]; then
-	errors=("${errors[@]}" "found $bricksfound bricks, expected $BRICKS ")
+elif [[ $bricksfound -lt $BRICKS ]]; then
+	errors+=(found $bricksfound bricks, expected $BRICKS)
 	ex_stat="WARNING_stat"
 fi
 
-if [ -n "$CRIT" -a -n "$WARN" ]; then
-	if [ $CRIT -ge $WARN ]; then
+if [[ -n $CRIT ]] && [[ -n $WARN ]]; then
+	if [[ $CRIT -ge $WARN ]]; then
 		Exit UNKNOWN "critical threshold below warning"
-	elif [ $freegb -lt $CRIT ]; then
-		errors=("${errors[@]}" "free space ${freegb}GB")
+	elif [[ $freegb -lt $CRIT ]]; then
+		errors+=(free space ${freegb}GB)
 	        ex_stat="CRITICAL_stat"
-	elif [ $freegb -lt $WARN ]; then
-		errors=("${errors[@]}" "free space ${freegb}GB")
+	elif [[ $freegb -lt $WARN ]]; then
+		errors+=(free space ${freegb}GB)
 		ex_stat="WARNING_stat"
 	fi
 fi
 
 # exit with warning if errors
-if [ -n "$errors" ]; then
+if [[ -n $errors ]]; then
 	sep='; '
 	msg=$(printf "${sep}%s" "${errors[@]}")
 	msg=${msg:${#sep}}
-	if [ ${ex_stat} == "CRITICAL_stat" ]; then
+	if [[ ${ex_stat} == "CRITICAL_stat" ]]; then
 		Exit CRITICAL "${msg}"
 	else
 		Exit WARNING "${msg}"
