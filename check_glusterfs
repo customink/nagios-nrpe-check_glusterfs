@@ -12,7 +12,7 @@
 # following in /etc/sudoers (or something equivalent):
 #
 # Defaults:nagios !requiretty
-# nagios ALL=(root) NOPASSWD:/usr/sbin/gluster volume status [[\:graph\:]]* detail,/usr/sbin/gluster volume heal [[\:graph\:]]* info
+# nagios ALL=(root) NOPASSWD:/usr/sbin/gluster volume status [-_[\:alnum\:]]+ detail,/usr/sbin/gluster volume heal [-_[\:alnum\:]]+ info
 #
 # That should give us all the access we need to check the status of any
 # currently defined peers and volumes.

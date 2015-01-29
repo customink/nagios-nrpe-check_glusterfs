@@ -1,0 +1,19 @@
+#!/bin/bash
+# Lock down ssh authorized_keys command
+#  command="/usr/bin/ssh_wrapper",no-agent-forwarding,no-port-forwarding,no-pty,no-X11-forwarding ssh-rsa ...
+
+CHECK_GLUSTER=/usr/bin/check_glusterfs
+GLUSTER_REGEX='^check_glusterfs -v [-_[:alnum:]]+ -n [0-9]+( -w [0-9.]+ -c [0-9.]+)?$'
+
+case "$SSH_ORIGINAL_COMMAND" in
+	check_glusterfs*)
+		# assert command looks good, assumes GNU grep
+		if grep -E "$GLUSTER_REGEX" <<<$SSH_ORIGINAL_COMMAND; then
+			exec $CHECK_GLUSTER ${SSH_ORIGINAL_COMMAND#* }
+		fi
+		;;
+esac
+
+echo "Sorry. Only these commands are available to you:"
+echo "check_glusterfs -v VOLUME -n BRICKS [-w GB -c GB]"
+exit 1
