@@ -92,6 +92,7 @@ for entries in $(sudo gluster volume heal ${VOLUME} info | awk '/^Number of entr
 done
 if [ "$heal" -gt 0 ]; then
 	errors=("${errors[@]}" "$heal unsynched entries")
+	ex_stat="WARNING_stat"
 fi
 
 # get volume status
@@ -147,7 +148,7 @@ if [ -n "$CRIT" -a -n "$WARN" ]; then
 		Exit UNKNOWN "critical threshold below warning"
 	elif [ $freegb -lt $CRIT ]; then
 		errors=("${errors[@]}" "free space ${freegb}GB")
-	        ex_stat="CRITICAL_stat"
+		ex_stat="CRITICAL_stat"
 	elif [ $freegb -lt $WARN ]; then
 		errors=("${errors[@]}" "free space ${freegb}GB")
 		ex_stat="WARNING_stat"
@@ -159,7 +160,7 @@ if [ -n "$errors" ]; then
 	sep='; '
 	msg=$(printf "${sep}%s" "${errors[@]}")
 	msg=${msg:${#sep}}
-	if [ ${ex_stat} == "CRITICAL_stat" ]; then
+	if [ "${ex_stat}" == "CRITICAL_stat" ]; then
 		Exit CRITICAL "${msg}"
 	else
 		Exit WARNING "${msg}"
