@@ -32,9 +32,15 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
 PROGNAME=$(basename -- $0)
 PROGPATH=`echo $0 | sed -e 's,[\\/][^\\/][^\\/]*$,,'`
-REVISION="1.0.1"
+REVISION="1.0.3"
 
-. $PROGPATH/utils.sh
+if [ -f $PROGPATH/utils.sh ]
+then
+        . $PROGPATH/utils.sh
+else
+		echo "Fatal error, missing $PROGPATH/utils.sh"
+		exit 1
+fi
 
 # parse command line
 usage () {
