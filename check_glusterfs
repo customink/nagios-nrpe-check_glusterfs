@@ -37,6 +37,9 @@ REVISION="1.0.3"
 if [ -f $PROGPATH/utils.sh ]
 then
         . $PROGPATH/utils.sh
+else
+		echo "Fatal error, missing $PROGPATH/utils.sh"
+		exit 1
 fi
 
 # parse command line
