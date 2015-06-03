@@ -92,6 +92,7 @@ for entries in $(sudo gluster volume heal ${VOLUME} info | awk '/^Number of entr
 done
 if [ "$heal" -gt 0 ]; then
 	errors=("${errors[@]}" "$heal unsynched entries")
+	ex_stat="WARNING_stat"
 fi
 
 # get volume status
@@ -130,6 +131,7 @@ while read -r line; do
 			let $((bricksfound++))
 		else
 			errors=("${errors[@]}" "$brick offline")
+			ex_stat="WARNING_stat"
 		fi
 		;;
 	esac
