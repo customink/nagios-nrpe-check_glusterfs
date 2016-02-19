@@ -110,16 +110,20 @@ while read -r line; do
 			freeunit=${field[@]:4}
 			free=${freeunit:0:-2}
 			freeconvgb=`echo "($free*1024)" | bc`
+			freeconvmb=`echo "scale=3; ($free/1024)" | bc`
 			unit=${freeunit#$free}
 			if [ "$unit" = "TB" ]; then
 				free=$freeconvgb
 				unit="GB"
 			fi
+			if [ "$unit" = "MB" ]; then
+				free=$freeconvmb
+				unit="GB"
+			fi
 			if [ "$unit" != "GB" ]; then
 				Exit UNKNOWN "unknown disk space size $freeunit"
 			fi
-			free=$(echo "${free} / 1" | bc -q)
-			if [ $free -lt $freegb ]; then
+			if [ "$(echo "$(bc <<< "${free}<${freegb}")")" == "1" ]; then
 				freegb=$free
 			fi
 		fi
@@ -143,12 +147,15 @@ elif [ $bricksfound -lt $BRICKS ]; then
 fi
 
 if [ -n "$CRIT" -a -n "$WARN" ]; then
-	if [ $CRIT -ge $WARN ]; then
+	#if [ $CRIT -ge $WARN ]; then
+	if [ "$(echo "$(bc <<< "${CRIT}>${WARN}")")" == "1" ]; then
 		Exit UNKNOWN "critical threshold below warning"
-	elif [ $freegb -lt $CRIT ]; then
+	#elif [ $freegb -lt $CRIT ]; then
+	elif [ "$(echo "$(bc <<< "${freegb}<${CRIT}")")" == "1" ]; then	
 		errors=("${errors[@]}" "free space ${freegb}GB")
 	        ex_stat="CRITICAL_stat"
-	elif [ $freegb -lt $WARN ]; then
+	#elif [ $freegb -lt $WARN ]; then
+	elif [ "$(echo "$(bc <<< "${freegb}<${WARN}")")" == "1" ]; then
 		errors=("${errors[@]}" "free space ${freegb}GB")
 		ex_stat="WARNING_stat"
 	fi
