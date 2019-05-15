@@ -91,7 +91,7 @@ for entries in $(sudo gluster volume heal ${VOLUME} info | awk '/^Number of entr
 	fi
 done
 if [ "$heal" -gt 0 ]; then
-	errors=("${errors[@]}" "$heal unsynched entries")
+	errors=("${errors[@]}" "$heal unsynced entries")
 fi
 
 # get volume status
